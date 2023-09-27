@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  samba:
+    container_name: samba
+    ports:
+      - "10010:139"
+      - "10011:445"
+    expose:
+      - "10010"
+      - "10011"
+    hostname: samba
+    image: dperson/samba
+    volumes:
+      - "./samba/data:/data"
+      - "./samba/public:/samba/public"
+      - "./samba/john:/samba/john"
+    environment:
+      - "SAMBA_LOG_LEVEL=0"
+    networks:
+      - ti5-network
+    restart: always
+
+networks:
+  ti5-network:
+    driver: bridge
+
