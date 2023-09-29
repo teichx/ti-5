@@ -48,8 +48,10 @@
     "@mui/icons-material": "^5.14.11",
     "@mui/material": "^5.14.11",
     "electron-squirrel-startup": "^1.0.0",
+    "i18next": "^23.5.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-i18next": "^13.2.2",
     "react-router-dom": "^6.16.0"
   }
 }
