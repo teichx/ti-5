@@ -1,3 +1,21 @@
 {
-  "translations": {}
+  "translations": {
+    "hooks": {
+      "useFormat": {
+        "formatBytes": {
+          "b": "{{ value }} bytes",
+          "kb": "{{ value }} KB",
+          "mb": "{{ value }} MB",
+          "gb": "{{ value }} GB",
+          "tb": "{{ value }} TB"
+        }
+      }
+    },
+    "components": {
+      "StorageUsed": {
+        "used": "{{ used }} de {{ total }} usados",
+        "percent": "{{ percent }}%"
+      }
+    }
+  }
 }
