@@ -5,6 +5,7 @@ import { Router } from "./routes/Router";
 import { ThemeProvider } from "@mui/material";
 import { Theme } from "./Theme";
 import CssBaseline from "@mui/material/CssBaseline";
+import "./i18n";
 
 const root = createRoot(document.getElementById("root"));
 
