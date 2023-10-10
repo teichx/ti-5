@@ -16,6 +16,15 @@
         "used": "{{ used }} de {{ total }} usados",
         "percent": "{{ percent }}%"
       }
+    },
+    "sidebar": {
+      "buttons": {
+        "allFiles": "Todos arquivos",
+        "shared": "Compartilhados",
+        "images": "Imagens",
+        "recent": "Recentes",
+        "favorites": "Favoritos"
+      }
     }
   }
 }
