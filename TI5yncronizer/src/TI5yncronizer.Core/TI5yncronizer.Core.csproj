@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <LangVersion>preview</LangVersion>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Authors>Temístocles Schwartz</Authors>
+    <RepositoryUrl>https://github.com/teichx/ti-5</RepositoryUrl>
+  </PropertyGroup>
+
+</Project>
