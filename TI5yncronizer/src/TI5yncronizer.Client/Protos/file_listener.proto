@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+option csharp_namespace = "TI5yncronizer.Client";
+
+package file_listener;
+
+service FileListener {
+  rpc AddListener (AddListenerRequest) returns (AddListenerReply);
+  rpc RemoveListener (RemoveListenerRequest) returns (RemoveListenerReply);
+  rpc ListListeners (ListListenersRequest) returns (ListListenersReply);
+}
+
+message AddListenerRequest {
+    string folder = 1;
+}
+message AddListenerReply {
+    int32 status = 1;
+}
+
+
+message RemoveListenerRequest {
+    string folder = 1;
+}
+message RemoveListenerReply {
+    int32 status = 1;
+}
+
+
+message ListListenersRequest {}
+message ListListenersObject {
+    string folder = 1;
+}
+message ListListenersReply {
+    repeated ListListenersObject listeners = 1;
+}
