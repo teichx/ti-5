@@ -9,4 +9,8 @@
     <RepositoryUrl>https://github.com/teichx/ti-5</RepositoryUrl>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="SMBLibrary" Version="1.5.0.1" />
+  </ItemGroup>
+
 </Project>
