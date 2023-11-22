@@ -1,31 +1,11 @@
-using System.Net;
-using System.Net.WebSockets;
-using System.Text;
+using TI5yncronizer.Server.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 var app = builder.Build();
 
-app.UseWebSockets();
+// Configure the HTTP request pipeline.
+app.MapGrpcService<AuthService>();
+app.MapGrpcService<FileListenerService>();
+app.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
 
-app.Map("/", async (HttpContext context) =>
-{
-    if (!context.WebSockets.IsWebSocketRequest)
-    {
-        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-        return;
-    }
-
-    using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-    while (true)
-    {
-        await webSocket.SendAsync(
-            buffer: Encoding.ASCII.GetBytes($".NET Rocks -> {DateTime.Now}"),
-            messageType: WebSocketMessageType.Text,
-            endOfMessage: true,
-            cancellationToken: CancellationToken.None
-        );
-        await Task.Delay(1000);
-    }
-});
-
-await app.RunAsync();
+app.Run();

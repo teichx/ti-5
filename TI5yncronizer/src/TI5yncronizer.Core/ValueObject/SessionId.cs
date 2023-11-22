@@ -1,4 +1,4 @@
-namespace TI5yncronizer.Client.ValueObject;
+namespace TI5yncronizer.Core.ValueObject;
 
 public readonly struct SessionId(Guid _guid)
 {

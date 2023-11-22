@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option csharp_namespace = "TI5yncronizer.Client";
+option csharp_namespace = "TI5yncronizer.Core";
 
 package auth;
 

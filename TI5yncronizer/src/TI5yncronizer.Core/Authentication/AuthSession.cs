@@ -2,9 +2,9 @@ using System.Net;
 using System.Reflection;
 using SMBLibrary;
 using SMBLibrary.Client;
-using TI5yncronizer.Client.ValueObject;
+using TI5yncronizer.Core.ValueObject;
 
-namespace TI5yncronizer.Client.Authentication;
+namespace TI5yncronizer.Core.Authentication;
 
 public class AuthSession : IAuthSession, IDisposable
 {

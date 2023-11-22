@@ -1,7 +1,8 @@
 using Grpc.Core;
+using TI5yncronizer.Core;
 using TI5yncronizer.Core.FileWatcher;
 
-namespace TI5yncronizer.Client.Services;
+namespace TI5yncronizer.Server.Services;
 
 public class FileListenerService(IFileWatcher fileWatcher) : FileListener.FileListenerBase
 {

@@ -1,8 +1,9 @@
 using Grpc.Core;
-using TI5yncronizer.Client.Authentication;
-using TI5yncronizer.Client.ValueObject;
+using TI5yncronizer.Core;
+using TI5yncronizer.Core.Authentication;
+using TI5yncronizer.Core.ValueObject;
 
-namespace TI5yncronizer.Client.Services;
+namespace TI5yncronizer.Server.Services;
 
 public class AuthService(IAuthSession authSession, ILogger<AuthService> logger) : Auth.AuthBase
 {

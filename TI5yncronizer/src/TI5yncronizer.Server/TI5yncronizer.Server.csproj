@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Protobuf Include="..\TI5yncronizer.Core\Protos\auth.proto" GrpcServices="Server" />
+    <Protobuf Include="..\TI5yncronizer.Core\Protos\file_listener.proto" GrpcServices="Server" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" Version="2.52.0" />
     <PackageReference Include="EFCore.NamingConventions" Version="7.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.13">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
