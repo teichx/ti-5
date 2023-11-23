@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
+using TI5yncronizer.Core.FileWatcher;
 
 namespace TI5yncronizer.Server.Model;
 
@@ -17,4 +18,20 @@ public class ListenerModel
 
     [Required, StringLength(255)]
     public required string DeviceIdentifier { get; set; }
+
+    public static ListenerModel FromWatcher(Watcher watcher)
+        => new()
+        {
+            LocalPath = watcher.LocalPath,
+            ServerPath = watcher.ServerPath,
+            DeviceIdentifier = watcher.DeviceIdentifier,
+        };
+
+    public Watcher ToWatcher()
+        => new()
+        {
+            LocalPath = LocalPath,
+            ServerPath = ServerPath,
+            DeviceIdentifier = DeviceIdentifier,
+        };
 }

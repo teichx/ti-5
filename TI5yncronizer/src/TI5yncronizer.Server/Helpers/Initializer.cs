@@ -25,6 +25,6 @@ public static class Initializer
             .OrderBy(x => x.Id)
             .ToListAsync();
 
-        listenersPaths.ForEach(x => fileWatcher.AddWatcher(x.LocalPath));
+        listenersPaths.ForEach(x => fileWatcher.AddWatcher(x.ToWatcher()));
     }
 }

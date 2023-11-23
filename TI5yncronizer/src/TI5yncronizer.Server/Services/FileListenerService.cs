@@ -1,37 +1,104 @@
 using Grpc.Core;
+using Microsoft.EntityFrameworkCore;
 using TI5yncronizer.Core;
 using TI5yncronizer.Core.FileWatcher;
+using TI5yncronizer.Server.Context;
+using TI5yncronizer.Server.Model;
 
 namespace TI5yncronizer.Server.Services;
 
-public class FileListenerService(IFileWatcher fileWatcher) : FileListener.FileListenerBase
+public class FileListenerService(IFileWatcher fileWatcher, DataContext dataContext) : FileListener.FileListenerBase
 {
-    public override Task<AddListenerReply> AddListener(AddListenerRequest request, ServerCallContext context)
+    public override async Task<AddListenerReply> AddListener(AddListenerRequest request, ServerCallContext context)
     {
-        var status = fileWatcher.AddWatcher(request.Folder);
-        return Task.FromResult(new AddListenerReply
+        var watcher = new Watcher
         {
-            Status = (int)status,
-        });
+            LocalPath = request.LocalPath,
+            ServerPath = request.ServerPath,
+            DeviceIdentifier = request.DeviceIdentifier,
+        };
+        if (watcher.IsValid() is false)
+        {
+            return new AddListenerReply
+            {
+                Status = (int)EnumFileWatcher.TryCreateInvalid,
+            };
+        }
+        var listenerModel = ListenerModel.FromWatcher(watcher);
+
+        var transaction = await dataContext.Database.BeginTransactionAsync();
+        try
+        {
+            var listener = await dataContext.Listener.AddAsync(listenerModel);
+            await dataContext.SaveChangesAsync();
+            var status = fileWatcher.AddWatcher(watcher);
+            await transaction.CommitAsync();
+
+            return new AddListenerReply
+            {
+                Id = listener.Entity.Id,
+                Status = (int)status,
+            };
+        }
+        catch (DbUpdateException)
+        {
+            await transaction.RollbackAsync();
+            var listenerFromDb = await dataContext.Listener
+                .Where(x => x.DeviceIdentifier == listenerModel.DeviceIdentifier)
+                .Where(x => x.LocalPath == listenerModel.LocalPath)
+                .Where(x => x.ServerPath == listenerModel.ServerPath)
+                .SingleAsync();
+            return new AddListenerReply
+            {
+                Id = listenerFromDb.Id,
+                Status = (int)EnumFileWatcher.TryCreateAlreadyExists,
+            };
+        }
+        catch
+        {
+            fileWatcher.RemoveWatcher(watcher);
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
-    public override Task<RemoveListenerReply> RemoveListener(RemoveListenerRequest request, ServerCallContext context)
+    public override async Task<RemoveListenerReply> RemoveListener(RemoveListenerRequest request, ServerCallContext context)
     {
-        var status = fileWatcher.RemoveWatcher(request.Folder);
-        return Task.FromResult(new RemoveListenerReply
+        var listener = await dataContext.Listener.SingleOrDefaultAsync(x => x.Id == request.Id);
+        if (listener is null)
+        {
+            return new RemoveListenerReply
+            {
+                Status = (int)EnumFileWatcher.TryRemoveNotExists,
+            };
+        }
+
+        var status = fileWatcher.RemoveWatcher(listener.ToWatcher());
+
+        return new RemoveListenerReply
         {
             Status = (int)status,
-        });
+        };
     }
 
-    public override Task<ListListenersReply> ListListeners(ListListenersRequest request, ServerCallContext context)
+    public override async Task<ListListenersReply> ListListeners(ListListenersRequest request, ServerCallContext context)
     {
+        var listenerList = await dataContext.Listener
+            .Where(x => x.DeviceIdentifier == request.DeviceIdentifier)
+            .Select(x => new
+            {
+                x.LocalPath,
+                x.ServerPath,
+            })
+            .ToListAsync();
+
         var result = new ListListenersReply();
-        result.Listeners.AddRange(fileWatcher.FolderWatched.Select(x => new ListListenersObject
+        result.Listeners.AddRange(listenerList?.Select(x => new ListListenersObject
         {
-            Folder = x,
+            LocalPath = x.LocalPath,
+            ServerPath = x.ServerPath,
         }));
 
-        return Task.FromResult(result);
+        return result;
     }
 }

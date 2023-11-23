@@ -1,19 +1,19 @@
 using System.Collections.Concurrent;
-using System.Collections.Immutable;
 using Microsoft.Extensions.Logging;
 
 namespace TI5yncronizer.Core.FileWatcher;
 
-public class FileWatcher(ILogger<FileWatcher> logger, IFileWatcherActions watcherActions) : IFileWatcher
+public class FileWatcher(
+    ILogger<FileWatcher> logger,
+    IFileWatcherActions watcherActions
+) : IFileWatcher
 {
-    private readonly ConcurrentDictionary<string, FileSystemWatcher> watchers = new();
-    public IReadOnlySet<string> FolderWatched => watchers
-        .Keys
-        .ToImmutableHashSet();
-
-    private FileSystemWatcher CreateWatcher(string path)
+    private readonly ConcurrentDictionary<IWatcher, FileSystemWatcher> watchers = new();
+    private FileSystemWatcher CreateWatcher(IWatcher watcher)
     {
-        var watcher = new FileSystemWatcher(path)
+        var isServer = Environment.GetEnvironmentVariable("IS_SERVER") == "true";
+        var path = isServer ? watcher.ServerPath : watcher.LocalPath;
+        var fileWatcher = new FileSystemWatcher(path)
         {
             NotifyFilter = NotifyFilters.Attributes
                              | NotifyFilters.CreationTime
@@ -25,47 +25,35 @@ public class FileWatcher(ILogger<FileWatcher> logger, IFileWatcherActions watche
                              | NotifyFilters.Size
         };
 
-        watcher.Changed += watcherActions.OnChanged;
-        watcher.Created += watcherActions.OnCreated;
-        watcher.Deleted += watcherActions.OnDeleted;
-        watcher.Renamed += watcherActions.OnRenamed;
-        watcher.Error += watcherActions.OnError;
+        fileWatcher.Changed += (a, b) => watcherActions.OnChanged(a, b, watcher);
+        fileWatcher.Created += (a, b) => watcherActions.OnCreated(a, b, watcher);
+        fileWatcher.Deleted += (a, b) => watcherActions.OnDeleted(a, b, watcher);
+        fileWatcher.Renamed += (a, b) => watcherActions.OnRenamed(a, b, watcher);
+        fileWatcher.Error += (a, b) => watcherActions.OnError(a, b, watcher);
 
-        watcher.IncludeSubdirectories = true;
-        watcher.EnableRaisingEvents = true;
+        fileWatcher.IncludeSubdirectories = true;
+        fileWatcher.EnableRaisingEvents = true;
 
-        return watcher;
+        return fileWatcher;
     }
 
-    public EnumFileWatcher AddWatcher(string path)
+    public EnumFileWatcher AddWatcher(IWatcher watcher)
     {
-        logger.LogInformation("Try create watcher for path \"{Path}\"", path);
-
-        if (watchers.TryAdd(path, CreateWatcher(path)))
-        {
-            logger.LogInformation("Success on create listener for \"{Path}\"", path);
+        logger.LogInformation("Try add watcher for LocalPath={LocalPath} ServerPath={ServerPath} DeviceIdentifier={DeviceIdentifier}", watcher.LocalPath, watcher.ServerPath, watcher.DeviceIdentifier);
+        if (watchers.TryAdd(watcher, CreateWatcher(watcher)))
             return EnumFileWatcher.TryCreateSuccess;
-        }
 
-        logger.LogInformation("Listener already exists for \"{Path}\"", path);
         return EnumFileWatcher.TryCreateAlreadyExists;
     }
 
-    public EnumFileWatcher RemoveWatcher(string path)
+    public EnumFileWatcher RemoveWatcher(IWatcher watcher)
     {
-        logger.LogInformation("Try remove watcher for path \"{Path}\"", path);
-        if (watchers.TryRemove(path, out _))
-        {
-            logger.LogInformation("Success on remove listener for \"{Path}\"", path);
+        logger.LogInformation("Try remove watcher for LocalPath={LocalPath} ServerPath={ServerPath} DeviceIdentifier={DeviceIdentifier}", watcher.LocalPath, watcher.ServerPath, watcher.DeviceIdentifier);
+        if (watchers.TryRemove(watcher, out _))
             return EnumFileWatcher.TryRemoveSuccess;
-        }
 
-        logger.LogInformation("Listener not exists for \"{Path}\"", path);
         return EnumFileWatcher.TryRemoveNotExists;
     }
-
-    public IReadOnlySet<string> ListFolders()
-        => FolderWatched;
 
     public void Dispose()
     {

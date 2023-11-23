@@ -16,7 +16,7 @@ public class FileWatcherActions(
             .Select(x => x.DeviceIdentifier)
             .ToList();
 
-    public void OnChanged(object sender, FileSystemEventArgs e)
+    public void OnChanged(object sender, FileSystemEventArgs e, IWatcher watcher)
     {
         var pendingSynchronizeItems = ListDeviceIdentifierListAsync(e.FullPath)
             .Select(deviceIdentifier => new PendingSynchronizeModel
@@ -30,7 +30,7 @@ public class FileWatcherActions(
         dataContext.SaveChanges();
     }
 
-    public void OnCreated(object sender, FileSystemEventArgs e)
+    public void OnCreated(object sender, FileSystemEventArgs e, IWatcher watcher)
     {
         var pendingSynchronizeItems = ListDeviceIdentifierListAsync(e.FullPath)
             .Select(deviceIdentifier => new PendingSynchronizeModel
@@ -44,7 +44,7 @@ public class FileWatcherActions(
         dataContext.SaveChanges();
     }
 
-    public void OnDeleted(object sender, FileSystemEventArgs e)
+    public void OnDeleted(object sender, FileSystemEventArgs e, IWatcher watcher)
     {
         var pendingSynchronizeItems = ListDeviceIdentifierListAsync(e.FullPath)
             .Select(deviceIdentifier => new PendingSynchronizeModel
@@ -58,10 +58,10 @@ public class FileWatcherActions(
         dataContext.SaveChanges();
     }
 
-    public void OnError(object sender, ErrorEventArgs e)
+    public void OnError(object sender, ErrorEventArgs e, IWatcher watcher)
         => logger.LogError(e.GetException(), "OnError");
 
-    public void OnRenamed(object sender, RenamedEventArgs e)
+    public void OnRenamed(object sender, RenamedEventArgs e, IWatcher watcher)
     {
         var pendingSynchronizeItems = ListDeviceIdentifierListAsync(e.FullPath)
             .Select(deviceIdentifier => new PendingSynchronizeModel
