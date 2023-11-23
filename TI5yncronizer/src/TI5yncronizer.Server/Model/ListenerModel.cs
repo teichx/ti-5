@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace TI5yncronizer.Server.Model;
 
+[Index("DeviceIdentifier", "LocalPath", "ServerPath", IsUnique = true)]
 public class ListenerModel
 {
     [Key]
