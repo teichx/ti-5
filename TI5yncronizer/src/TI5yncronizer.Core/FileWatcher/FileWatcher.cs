@@ -25,11 +25,11 @@ public class FileWatcher(
                              | NotifyFilters.Size
         };
 
-        fileWatcher.Changed += (a, b) => watcherActions.OnChanged(a, b, watcher);
-        fileWatcher.Created += (a, b) => watcherActions.OnCreated(a, b, watcher);
-        fileWatcher.Deleted += (a, b) => watcherActions.OnDeleted(a, b, watcher);
-        fileWatcher.Renamed += (a, b) => watcherActions.OnRenamed(a, b, watcher);
-        fileWatcher.Error += (a, b) => watcherActions.OnError(a, b, watcher);
+        fileWatcher.Changed += (a, b) => watcherActions.OnChanged(b, watcher);
+        fileWatcher.Created += (a, b) => watcherActions.OnCreated(b, watcher);
+        fileWatcher.Deleted += (a, b) => watcherActions.OnDeleted(b, watcher);
+        fileWatcher.Renamed += (a, b) => watcherActions.OnRenamed(b, watcher);
+        fileWatcher.Error += (a, b) => watcherActions.OnError(b, watcher);
 
         fileWatcher.IncludeSubdirectories = true;
         fileWatcher.EnableRaisingEvents = true;
