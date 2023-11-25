@@ -1,7 +1,10 @@
+using TI5yncronizer.Client.Background;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddGrpc();
+builder.Services
+    .AddHostedService<ListenerHostedService>();
 
 var app = builder.Build();
 

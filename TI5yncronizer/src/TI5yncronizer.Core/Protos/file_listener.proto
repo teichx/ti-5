@@ -31,6 +31,7 @@ message RemoveListenerReply {
 
 message ListListenersRequest {
     string device_identifier = 1;
+    string createdAfter = 2;
 }
 message ListListenersObject {
     string local_path = 1;

@@ -9,4 +9,6 @@ public readonly struct Device
 
     public override string ToString()
         => Value;
+
+    public static Device DefaultDevice => new();
 }

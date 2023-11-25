@@ -81,10 +81,22 @@ public class FileListenerService(IFileWatcher fileWatcher, DataContext dataConte
         };
     }
 
+    IQueryable<ListenerModel> FilterByCreatedAfter(IQueryable<ListenerModel> query, string? createdAfter)
+    {
+        if (string.IsNullOrWhiteSpace(createdAfter)) return query;
+
+        var createdAfterParsed = DateTime.Parse(createdAfter);
+        return query.Where(x => x.CreatedAt >= createdAfterParsed);
+    }
+
     public override async Task<ListListenersReply> ListListeners(ListListenersRequest request, ServerCallContext context)
     {
-        var listenerList = await dataContext.Listener
-            .Where(x => x.DeviceIdentifier == request.DeviceIdentifier)
+        var query = dataContext.Listener
+            .Where(x => x.DeviceIdentifier == request.DeviceIdentifier);
+
+        var filteredByDate = FilterByCreatedAfter(query, request.CreatedAfter);
+
+        var listenerList = await filteredByDate
             .Select(x => new
             {
                 x.LocalPath,
