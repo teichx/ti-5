@@ -1,9 +1,13 @@
 using TI5yncronizer.Client.Background;
+using TI5yncronizer.Client.FileWatcher;
+using TI5yncronizer.Core.FileWatcher;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services
+    .AddSingleton<IFileWatcherActions, FileWatcherActions>()
+    .AddSingleton<IFileWatcher, FileWatcher>()
     .AddHostedService<ListenerHostedService>();
 
 var app = builder.Build();

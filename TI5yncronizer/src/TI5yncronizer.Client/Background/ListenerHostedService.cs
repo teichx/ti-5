@@ -1,12 +1,14 @@
 using Grpc.Net.Client;
 using TI5yncronizer.Core;
+using TI5yncronizer.Core.FileWatcher;
 using TI5yncronizer.Core.ValueObject;
 
 namespace TI5yncronizer.Client.Background;
 
 public class ListenerHostedService(
     ILogger<ListenerHostedService> logger,
-    IConfiguration configuration
+    IConfiguration configuration,
+    IFileWatcher fileWatcher
 ) : IHostedService, IDisposable
 {
     DateTime? _lastQuery = null;
@@ -35,8 +37,17 @@ public class ListenerHostedService(
                 CreatedAfter = _lastQuery is null ? string.Empty : _lastQuery.ToString(),
                 DeviceIdentifier = Device.DefaultDevice.Value,
             });
+            foreach (var item in listeners.Listeners)
+            {
+                fileWatcher.AddWatcher(new Watcher
+                {
+                    LocalPath = item.LocalPath,
+                    ServerPath = item.ServerPath,
+                    DeviceIdentifier = Device.DefaultDevice.Value,
+                });
+            }
+
             _lastQuery = queryInit;
-            Console.WriteLine(listeners.Listeners.Count);
         }
         catch (Exception e)
         {
