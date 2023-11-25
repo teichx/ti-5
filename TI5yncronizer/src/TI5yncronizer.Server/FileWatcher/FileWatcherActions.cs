@@ -11,10 +11,15 @@ public class FileWatcherActions(
 ) : IFileWatcherActions
 {
     List<string> ListDeviceIdentifierListAsync(string fullPath)
-        => dataContext.Listener
-            .Where(x => x.ServerPath == fullPath)
+    {
+        var directory = Path.GetDirectoryName(fullPath)
+            ?.Replace('\\', '/');
+
+        return dataContext.Listener
+            .Where(x => x.ServerPath == directory)
             .Select(x => x.DeviceIdentifier)
             .ToList();
+    }
 
     public void OnChanged(FileSystemEventArgs e, IWatcher watcher)
     {
