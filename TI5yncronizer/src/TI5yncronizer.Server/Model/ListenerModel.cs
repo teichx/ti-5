@@ -24,6 +24,7 @@ public class ListenerModel
 
     [Required]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? DeletedAt { get; set; } = null;
 
     public static ListenerModel FromWatcher(Watcher watcher)
         => new()
