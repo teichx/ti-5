@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using TI5yncronizer.Core;
@@ -130,6 +129,7 @@ public class FileListenerService(
                 x.LocalPath,
                 x.OldLocalPath,
                 x.Action,
+                x.LastWriteUtcAsTicks,
             })
             .Take(100)
             .ToListAsync();
@@ -140,6 +140,7 @@ public class FileListenerService(
             Id = x.Id,
             LocalPath = x.LocalPath,
             EnumAction = (int)x.Action,
+            LastWriteUtcAsTicks = x.LastWriteUtcAsTicks,
         }));
 
         return result;

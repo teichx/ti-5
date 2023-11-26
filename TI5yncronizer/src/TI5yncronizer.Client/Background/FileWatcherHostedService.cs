@@ -74,7 +74,8 @@ public class FileWatcherHostedService(
         try
         {
             var action = ((EnumAction)file.EnumAction).ToString();
-            logger.LogInformation("Try {Action} from {Server} to {Local} with id {Id}", action, file.ServerPath, file.LocalPath, file.Id);
+            var lastWriteUtc = new DateTime(file.LastWriteUtcAsTicks);
+            logger.LogInformation("Try {Action} from {Server} to {Local} with id {Id} lastWrite {}", action, file.ServerPath, file.LocalPath, file.Id, lastWriteUtc.Ticks);
             var watcher = new Watcher
             {
                 LocalPath = file.LocalPath,
