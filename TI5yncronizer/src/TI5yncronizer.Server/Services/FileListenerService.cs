@@ -7,7 +7,11 @@ using TI5yncronizer.Server.Model;
 
 namespace TI5yncronizer.Server.Services;
 
-public class FileListenerService(IFileWatcher fileWatcher, DataContext dataContext) : FileListener.FileListenerBase
+public class FileListenerService(
+    IFileWatcher fileWatcher,
+    DataContext dataContext,
+    ILogger<FileListenerService> logger
+) : FileListener.FileListenerBase
 {
     public override async Task<AddListenerReply> AddListener(AddListenerRequest request, ServerCallContext context)
     {
@@ -112,5 +116,45 @@ public class FileListenerService(IFileWatcher fileWatcher, DataContext dataConte
         }));
 
         return result;
+    }
+
+    public override async Task<ListPendingFilesToSyncReply> ListPendingFilesToSync(ListPendingFilesToSyncRequest request, ServerCallContext context)
+    {
+        var fileList = await dataContext.PendingSynchronizer
+            .Where(x => x.DeviceIdentifier == request.DeviceIdentifier)
+            .Select(x => new
+            {
+                x.Id,
+                x.LocalPath,
+                x.OldLocalPath,
+                x.Action,
+            })
+            .Take(100)
+            .ToListAsync();
+
+        var result = new ListPendingFilesToSyncReply();
+        result.Files.AddRange(fileList?.Select(x => new ListPendingFilesToSyncObject
+        {
+            Id = x.Id,
+            LocalPath = x.LocalPath,
+            EnumAction = (int)x.Action,
+        }));
+
+        return result;
+    }
+
+    public override async Task<FileSynchronizedReply> FileSynchronized(FileSynchronizedRequest request, ServerCallContext context)
+    {
+        var itemsUpdated = await dataContext.PendingSynchronizer
+            .Where(x => x.Id == request.Id)
+            .Where(x => x.DeviceIdentifier == request.DeviceIdentifier)
+            .ExecuteDeleteAsync();
+
+        if (itemsUpdated is 0)
+        {
+            logger.LogError("Failed on delete registers for id={Id} and device={DeviceIdentifier}", request.Id, request.DeviceIdentifier);
+        }
+
+        return new FileSynchronizedReply();
     }
 }

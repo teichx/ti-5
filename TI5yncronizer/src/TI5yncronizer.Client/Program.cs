@@ -8,7 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddSingleton<IFileWatcherActions, FileWatcherActions>()
     .AddSingleton<IFileWatcher, FileWatcher>()
-    .AddHostedService<ListenerHostedService>();
+    .AddHostedService<ListenerHostedService>()
+    .AddHostedService<FileWatcherHostedService>();
 
 var app = builder.Build();
 

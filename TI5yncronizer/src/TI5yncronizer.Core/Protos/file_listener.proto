@@ -8,6 +8,8 @@ service FileListener {
   rpc AddListener (AddListenerRequest) returns (AddListenerReply);
   rpc RemoveListener (RemoveListenerRequest) returns (RemoveListenerReply);
   rpc ListListeners (ListListenersRequest) returns (ListListenersReply);
+  rpc ListPendingFilesToSync (ListPendingFilesToSyncRequest) returns (ListPendingFilesToSyncReply);
+  rpc FileSynchronized (FileSynchronizedRequest) returns (FileSynchronizedReply);
 }
 
 message AddListenerRequest {
@@ -39,4 +41,26 @@ message ListListenersObject {
 }
 message ListListenersReply {
     repeated ListListenersObject listeners = 1;
+}
+
+
+message ListPendingFilesToSyncRequest {
+    string device_identifier = 1;
+}
+message ListPendingFilesToSyncObject {
+    int32 id = 1;
+    string local_path = 2;
+    string server_path = 3;
+    int32 enum_action = 4;
+}
+message ListPendingFilesToSyncReply {
+    repeated ListPendingFilesToSyncObject files = 1;
+}
+
+
+message FileSynchronizedRequest {
+    int32 id = 1;
+    string device_identifier = 2;
+}
+message FileSynchronizedReply {
 }

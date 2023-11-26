@@ -11,7 +11,7 @@ public class ListenerHostedService(
     IFileWatcher fileWatcher
 ) : IHostedService, IDisposable
 {
-    DateTime? _lastQuery = null;
+    DateTime? _lastQuery;
     Timer? _timer;
     GrpcChannel? _grpcChannel;
     FileListener.FileListenerClient? _fileListenerClient;
