@@ -8,7 +8,9 @@ public static class Initializer
 {
     public static async ValueTask Init(this IServiceProvider serviceProvider)
     {
-        using var dbContext = serviceProvider.GetRequiredService<DataContext>();
+
+        var dbContextFactory = serviceProvider.GetRequiredService<IDbContextFactory<DataContext>>();
+        using var dbContext = await dbContextFactory.CreateDbContextAsync();
         var fileWatcher = serviceProvider.GetRequiredService<IFileWatcher>();
 
         await Migrate(dbContext);

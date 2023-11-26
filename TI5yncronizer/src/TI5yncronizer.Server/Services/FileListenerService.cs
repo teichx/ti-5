@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using TI5yncronizer.Core;
@@ -9,10 +10,12 @@ namespace TI5yncronizer.Server.Services;
 
 public class FileListenerService(
     IFileWatcher fileWatcher,
-    DataContext dataContext,
+    IDbContextFactory<DataContext> dbContextFactory,
     ILogger<FileListenerService> logger
 ) : FileListener.FileListenerBase
 {
+    DataContext dataContext = dbContextFactory.CreateDbContext();
+
     public override async Task<AddListenerReply> AddListener(AddListenerRequest request, ServerCallContext context)
     {
         var watcher = new Watcher
@@ -28,47 +31,36 @@ public class FileListenerService(
                 Status = (int)EnumFileWatcher.TryCreateInvalid,
             };
         }
-        var listenerModel = ListenerModel.FromWatcher(watcher);
+        var listenerModel = await dataContext.Listener
+            .Where(x => x.LocalPath == watcher.LocalPath)
+            .Where(x => x.DeviceIdentifier == watcher.DeviceIdentifier)
+            .Where(x => x.ServerPath == watcher.ServerPath)
+            .SingleOrDefaultAsync()
+            ?? ListenerModel.FromWatcher(watcher);
 
-        var transaction = await dataContext.Database.BeginTransactionAsync();
-        try
+        if (listenerModel.Id is 0)
         {
-            var listener = await dataContext.Listener.AddAsync(listenerModel);
-            await dataContext.SaveChangesAsync();
-            var status = fileWatcher.AddWatcher(watcher);
-            await transaction.CommitAsync();
+            await dataContext.Listener.AddAsync(listenerModel);
+        }
+        if (listenerModel.DeletedAt is not null)
+        {
+            listenerModel.DeletedAt = null;
+        }
 
-            return new AddListenerReply
-            {
-                Id = listener.Entity.Id,
-                Status = (int)status,
-            };
-        }
-        catch (DbUpdateException)
+        listenerModel.UpdatedAt = DateTime.UtcNow;
+        var status = fileWatcher.AddWatcher(watcher);
+        await dataContext.SaveChangesAsync();
+        return new AddListenerReply
         {
-            await transaction.RollbackAsync();
-            var listenerFromDb = await dataContext.Listener
-                .Where(x => x.DeviceIdentifier == listenerModel.DeviceIdentifier)
-                .Where(x => x.LocalPath == listenerModel.LocalPath)
-                .Where(x => x.ServerPath == listenerModel.ServerPath)
-                .SingleAsync();
-            return new AddListenerReply
-            {
-                Id = listenerFromDb.Id,
-                Status = (int)EnumFileWatcher.TryCreateAlreadyExists,
-            };
-        }
-        catch
-        {
-            fileWatcher.RemoveWatcher(watcher);
-            await transaction.RollbackAsync();
-            throw;
-        }
+            Id = listenerModel.Id,
+            Status = (int)status,
+        };
     }
 
     public override async Task<RemoveListenerReply> RemoveListener(RemoveListenerRequest request, ServerCallContext context)
     {
-        var listener = await dataContext.Listener.SingleOrDefaultAsync(x => x.Id == request.Id);
+        var listener = await dataContext.Listener
+            .SingleOrDefaultAsync(x => x.Id == request.Id);
         if (listener is null)
         {
             return new RemoveListenerReply
@@ -78,6 +70,13 @@ public class FileListenerService(
         }
 
         var status = fileWatcher.RemoveWatcher(listener.ToWatcher());
+        await dataContext.Listener
+            .Where(x => x.Id == request.Id)
+            .Where(x => x.DeletedAt == null)
+            .ExecuteUpdateAsync(x => x
+                .SetProperty(y => y.DeletedAt, DateTime.UtcNow)
+                .SetProperty(y => y.UpdatedAt, DateTime.UtcNow)
+            );
 
         return new RemoveListenerReply
         {
@@ -85,12 +84,12 @@ public class FileListenerService(
         };
     }
 
-    IQueryable<ListenerModel> FilterByCreatedAfter(IQueryable<ListenerModel> query, string? createdAfter)
+    IQueryable<ListenerModel> FilterByCreatedAfter(IQueryable<ListenerModel> query, string? updatedAfter)
     {
-        if (string.IsNullOrWhiteSpace(createdAfter)) return query;
+        if (string.IsNullOrWhiteSpace(updatedAfter)) return query;
 
-        var createdAfterParsed = DateTime.Parse(createdAfter);
-        return query.Where(x => x.CreatedAt >= createdAfterParsed);
+        var createdAfterParsed = DateTime.Parse(updatedAfter);
+        return query.Where(x => x.UpdatedAt >= createdAfterParsed);
     }
 
     public override async Task<ListListenersReply> ListListeners(ListListenersRequest request, ServerCallContext context)
@@ -98,13 +97,14 @@ public class FileListenerService(
         var query = dataContext.Listener
             .Where(x => x.DeviceIdentifier == request.DeviceIdentifier);
 
-        var filteredByDate = FilterByCreatedAfter(query, request.CreatedAfter);
+        var filteredByDate = FilterByCreatedAfter(query, request.UpdatedAfter);
 
         var listenerList = await filteredByDate
             .Select(x => new
             {
                 x.LocalPath,
                 x.ServerPath,
+                x.DeletedAt,
             })
             .ToListAsync();
 
@@ -113,6 +113,7 @@ public class FileListenerService(
         {
             LocalPath = x.LocalPath,
             ServerPath = x.ServerPath,
+            IsActive = x.DeletedAt is null,
         }));
 
         return result;

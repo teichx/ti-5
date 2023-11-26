@@ -9,8 +9,7 @@ Environment.SetEnvironmentVariable("IS_SERVER", "true");
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
-    .AddDbContext<DataContext>()
-    .AddTransient<DataContext>()
+    .AddDbContextFactory<DataContext, DataContextFactory>()
     .AddSingleton<IFileWatcherActions, FileWatcherActions>()
     .AddSingleton<IAuthSession, AuthSession>()
     .AddSingleton<IFileWatcher, FileWatcher>()
