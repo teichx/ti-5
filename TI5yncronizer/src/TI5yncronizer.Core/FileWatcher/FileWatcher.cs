@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
 namespace TI5yncronizer.Core.FileWatcher;
@@ -11,16 +10,16 @@ public class FileWatcher(
 {
     private readonly ConcurrentDictionary<IWatcher, FileSystemWatcher> watchers = new();
 
-    async ValueTask NotifyChangeRecursive(string path, IWatcher watcher)
+    static string PathFromIWatcher(IWatcher watcher)
+        => Environment.GetEnvironmentVariable("IS_SERVER") == "true"
+            ? watcher.ServerPath
+            : watcher.LocalPath;
+
+    public async ValueTask NotifyChangeRecursive(IWatcher watcher)
     {
-        logger.LogInformation("NotifyChangeRecursive {path}", path);
-        var isServer = Environment.GetEnvironmentVariable("IS_SERVER") == "true";
+        var path = PathFromIWatcher(watcher);
         foreach (var filePath in Directory.EnumerateFiles(path, "*.*", SearchOption.AllDirectories))
         {
-            if (isServer)
-            {
-                logger.LogInformation("Try move data {f}", filePath);
-            }
             var eventChange = new FileSystemEventArgs(
                 changeType: WatcherChangeTypes.Changed,
                 directory: string.Empty,
@@ -32,8 +31,7 @@ public class FileWatcher(
 
     private FileSystemWatcher CreateWatcher(IWatcher watcher)
     {
-        var isServer = Environment.GetEnvironmentVariable("IS_SERVER") == "true";
-        var path = isServer ? watcher.ServerPath : watcher.LocalPath;
+        var path = PathFromIWatcher(watcher);
         var fileWatcher = new FileSystemWatcher(path)
         {
             NotifyFilter = NotifyFilters.Attributes
@@ -53,8 +51,6 @@ public class FileWatcher(
 
         fileWatcher.IncludeSubdirectories = true;
         fileWatcher.EnableRaisingEvents = true;
-
-        NotifyChangeRecursive(path, watcher).GetAwaiter().GetResult();
 
         return fileWatcher;
     }

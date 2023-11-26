@@ -27,6 +27,11 @@ public static class Initializer
             .OrderBy(x => x.Id)
             .ToListAsync();
 
-        listenersPaths.ForEach(x => fileWatcher.AddWatcher(x.ToWatcher()));
+        foreach (var item in listenersPaths)
+        {
+            var watcher = item.ToWatcher();
+            fileWatcher.AddWatcher(watcher);
+            await fileWatcher.NotifyChangeRecursive(watcher);
+        }
     }
 }

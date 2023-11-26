@@ -50,6 +50,7 @@ public class FileListenerService(
         listenerModel.UpdatedAt = DateTime.UtcNow;
         var status = fileWatcher.AddWatcher(watcher);
         await dataContext.SaveChangesAsync();
+        await fileWatcher.NotifyChangeRecursive(watcher);
         return new AddListenerReply
         {
             Id = listenerModel.Id,
