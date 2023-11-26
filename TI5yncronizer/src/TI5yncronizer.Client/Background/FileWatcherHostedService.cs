@@ -10,6 +10,7 @@ public class FileWatcherHostedService(
     IConfiguration configuration
 ) : IHostedService, IDisposable
 {
+    bool _inRequest;
     Timer? _timer;
     GrpcChannel? _grpcChannel;
     FileListener.FileListenerClient? _fileListenerClient;
@@ -27,8 +28,10 @@ public class FileWatcherHostedService(
     void DoWork(object? state)
     {
         ArgumentNullException.ThrowIfNull(_fileListenerClient);
+        if (_inRequest) return;
         try
         {
+            _inRequest = true;
             var reply = _fileListenerClient.ListPendingFilesToSync(new ListPendingFilesToSyncRequest
             {
                 DeviceIdentifier = Device.DefaultDevice.Value,
@@ -44,6 +47,7 @@ public class FileWatcherHostedService(
                     DeviceIdentifier = Device.DefaultDevice.Value,
                 });
             }
+            _inRequest = false;
         }
         catch (Exception e)
         {

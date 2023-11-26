@@ -11,6 +11,7 @@ public class ListenerHostedService(
     IFileWatcher fileWatcher
 ) : IHostedService, IDisposable
 {
+    bool _inRequest;
     DateTime? _lastQuery;
     Timer? _timer;
     GrpcChannel? _grpcChannel;
@@ -29,8 +30,10 @@ public class ListenerHostedService(
     void DoWork(object? state)
     {
         ArgumentNullException.ThrowIfNull(_fileListenerClient);
+        if (_inRequest) return;
         try
         {
+            _inRequest = true;
             var queryInit = DateTime.UtcNow;
             var listeners = _fileListenerClient.ListListeners(new ListListenersRequest
             {
@@ -46,12 +49,18 @@ public class ListenerHostedService(
                     DeviceIdentifier = Device.DefaultDevice.Value,
                 };
 
-                _ = item.IsActive
-                    ? fileWatcher.AddWatcher(watcher)
-                    : fileWatcher.RemoveWatcher(watcher);
+                if (item.IsActive)
+                {
+                    fileWatcher.AddWatcher(watcher);
+                    fileWatcher.NotifyChangeRecursive(watcher).GetAwaiter().GetResult();
+                    continue;
+                }
+
+                fileWatcher.RemoveWatcher(watcher);
             }
 
             _lastQuery = queryInit;
+            _inRequest = false;
         }
         catch (Exception e)
         {
