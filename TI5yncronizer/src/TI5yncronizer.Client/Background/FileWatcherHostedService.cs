@@ -19,7 +19,7 @@ public class FileWatcherHostedService(
         logger.LogInformation("Start");
         _grpcChannel = GrpcChannel.ForAddress(configuration.GetConnectionString("Server")!);
         _fileListenerClient = new FileListener.FileListenerClient(_grpcChannel);
-        _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+        _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(500));
 
         return Task.CompletedTask;
     }
@@ -70,7 +70,7 @@ public class FileWatcherHostedService(
         try
         {
             var action = ((EnumAction)file.EnumAction).ToString();
-            logger.LogInformation("Try {Action} from {Server} to {Local}", action, file.ServerPath, file.LocalPath);
+            logger.LogInformation("Try {Action} from {Server} to {Local} with id {Id}", action, file.ServerPath, file.LocalPath, file.Id);
             var watcher = new Watcher
             {
                 LocalPath = file.LocalPath,
