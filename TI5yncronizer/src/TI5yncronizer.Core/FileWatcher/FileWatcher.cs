@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
 namespace TI5yncronizer.Core.FileWatcher;
@@ -9,10 +10,26 @@ public class FileWatcher(
 ) : IFileWatcher
 {
     private readonly ConcurrentDictionary<IWatcher, FileSystemWatcher> watchers = new();
+
+    void NotifyChangeRecursive(string path, IWatcher watcher)
+    {
+        var directory = Path.GetDirectoryName(path)!;
+        foreach (var filePath in Directory.EnumerateFiles(path, "*.*", SearchOption.AllDirectories))
+        {
+            var eventChange = new FileSystemEventArgs(
+                changeType: WatcherChangeTypes.Changed,
+                directory: directory,
+                name: filePath
+            );
+            watcherActions.OnChanged(eventChange, watcher);
+        }
+    }
+
     private FileSystemWatcher CreateWatcher(IWatcher watcher)
     {
         var isServer = Environment.GetEnvironmentVariable("IS_SERVER") == "true";
         var path = isServer ? watcher.ServerPath : watcher.LocalPath;
+        NotifyChangeRecursive(path, watcher);
         var fileWatcher = new FileSystemWatcher(path)
         {
             NotifyFilter = NotifyFilters.Attributes
@@ -48,8 +65,11 @@ public class FileWatcher(
     public EnumFileWatcher RemoveWatcher(IWatcher watcher)
     {
         logger.LogInformation("Try remove watcher for LocalPath={LocalPath} ServerPath={ServerPath} DeviceIdentifier={DeviceIdentifier}", watcher.LocalPath, watcher.ServerPath, watcher.DeviceIdentifier);
-        if (watchers.TryRemove(watcher, out _))
+        if (watchers.TryRemove(watcher, out var fileSystemWatcher))
+        {
+            fileSystemWatcher.Dispose();
             return EnumFileWatcher.TryRemoveSuccess;
+        }
 
         return EnumFileWatcher.TryRemoveNotExists;
     }

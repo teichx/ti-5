@@ -33,11 +33,12 @@ message RemoveListenerReply {
 
 message ListListenersRequest {
     string device_identifier = 1;
-    string createdAfter = 2;
+    string updated_after = 2;
 }
 message ListListenersObject {
     string local_path = 1;
     string server_path = 2;
+    bool is_active = 3;
 }
 message ListListenersReply {
     repeated ListListenersObject listeners = 1;

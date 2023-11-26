@@ -34,17 +34,21 @@ public class ListenerHostedService(
             var queryInit = DateTime.UtcNow;
             var listeners = _fileListenerClient.ListListeners(new ListListenersRequest
             {
-                CreatedAfter = _lastQuery is null ? string.Empty : _lastQuery.ToString(),
+                UpdatedAfter = _lastQuery is null ? string.Empty : _lastQuery.ToString(),
                 DeviceIdentifier = Device.DefaultDevice.Value,
             });
             foreach (var item in listeners.Listeners)
             {
-                fileWatcher.AddWatcher(new Watcher
+                var watcher = new Watcher
                 {
                     LocalPath = item.LocalPath,
                     ServerPath = item.ServerPath,
                     DeviceIdentifier = Device.DefaultDevice.Value,
-                });
+                };
+
+                _ = item.IsActive
+                    ? fileWatcher.AddWatcher(watcher)
+                    : fileWatcher.RemoveWatcher(watcher);
             }
 
             _lastQuery = queryInit;
