@@ -4,28 +4,33 @@ namespace TI5yncronizer.Client.FileWatcher;
 
 public class FileWatcherActions(ILogger<FileWatcherActions> logger) : IFileWatcherActions
 {
-    public void OnChanged(FileSystemEventArgs e, IWatcher watcher)
+    public Task OnChanged(FileSystemEventArgs e, IWatcher watcher)
     {
         logger.LogInformation("OnChanged {FullPath}", e.FullPath);
+        return Task.CompletedTask;
     }
 
-    public void OnCreated(FileSystemEventArgs e, IWatcher watcher)
+    public Task OnCreated(FileSystemEventArgs e, IWatcher watcher)
     {
         logger.LogInformation("OnCreated {FullPath}", e.FullPath);
+        return Task.CompletedTask;
     }
 
-    public void OnDeleted(FileSystemEventArgs e, IWatcher watcher)
+    public Task OnDeleted(FileSystemEventArgs e, IWatcher watcher)
     {
         logger.LogInformation("OnDeleted {FullPath}", e.FullPath);
+        return Task.CompletedTask;
     }
 
-    public void OnError(ErrorEventArgs e, IWatcher watcher)
+    public Task OnError(ErrorEventArgs e, IWatcher watcher)
     {
         logger.LogInformation("OnError {Error}", e);
+        return Task.CompletedTask;
     }
 
-    public void OnRenamed(RenamedEventArgs e, IWatcher watcher)
+    public Task OnRenamed(RenamedEventArgs e, IWatcher watcher)
     {
         logger.LogInformation("OnRenamed {FullPath}", e.FullPath);
+        return Task.CompletedTask;
     }
 }

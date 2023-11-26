@@ -25,67 +25,66 @@ public class FileWatcherActions(
             .ToListAsync();
     }
 
-    public void OnChanged(FileSystemEventArgs e, IWatcher watcher)
-        => Task.Run(async () =>
+    public async Task OnChanged(FileSystemEventArgs e, IWatcher watcher)
+    {
+        var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
+        .Select(deviceIdentifier => new PendingSynchronizeModel
         {
-            var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
+            Action = EnumAction.Changed,
+            LocalPath = e.FullPath,
+            DeviceIdentifier = deviceIdentifier,
+        });
+
+        await dataContext.PendingSynchronizer.AddRangeAsync(pendingSynchronizeItems);
+        await dataContext.SaveChangesAsync();
+    }
+
+    public async Task OnCreated(FileSystemEventArgs e, IWatcher watcher)
+    {
+        var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
             .Select(deviceIdentifier => new PendingSynchronizeModel
             {
-                Action = EnumAction.Changed,
+                Action = EnumAction.Created,
                 LocalPath = e.FullPath,
                 DeviceIdentifier = deviceIdentifier,
             });
 
-            await dataContext.PendingSynchronizer.AddRangeAsync(pendingSynchronizeItems);
-            await dataContext.SaveChangesAsync();
-        });
+        await dataContext.PendingSynchronizer.AddRangeAsync(pendingSynchronizeItems);
+        await dataContext.SaveChangesAsync();
+    }
 
-    public void OnCreated(FileSystemEventArgs e, IWatcher watcher)
-        => Task.Run(async () =>
-        {
-            var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
-                .Select(deviceIdentifier => new PendingSynchronizeModel
-                {
-                    Action = EnumAction.Created,
-                    LocalPath = e.FullPath,
-                    DeviceIdentifier = deviceIdentifier,
-                });
+    public async Task OnDeleted(FileSystemEventArgs e, IWatcher watcher)
+    {
+        var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
+            .Select(deviceIdentifier => new PendingSynchronizeModel
+            {
+                Action = EnumAction.Deleted,
+                LocalPath = e.FullPath,
+                DeviceIdentifier = deviceIdentifier,
+            });
 
-            await dataContext.PendingSynchronizer.AddRangeAsync(pendingSynchronizeItems);
-            await dataContext.SaveChangesAsync();
-        });
+        await dataContext.PendingSynchronizer.AddRangeAsync(pendingSynchronizeItems);
+        await dataContext.SaveChangesAsync();
+    }
 
-    public void OnDeleted(FileSystemEventArgs e, IWatcher watcher)
-        => Task.Run(async () =>
-        {
-            var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
-                .Select(deviceIdentifier => new PendingSynchronizeModel
-                {
-                    Action = EnumAction.Deleted,
-                    LocalPath = e.FullPath,
-                    DeviceIdentifier = deviceIdentifier,
-                });
+    public Task OnError(ErrorEventArgs e, IWatcher watcher)
+    {
+        logger.LogError(e.GetException(), "OnError");
+        return Task.CompletedTask;
+    }
 
-            await dataContext.PendingSynchronizer.AddRangeAsync(pendingSynchronizeItems);
-            await dataContext.SaveChangesAsync();
-        });
+    public async Task OnRenamed(RenamedEventArgs e, IWatcher watcher)
+    {
+        var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
+            .Select(deviceIdentifier => new PendingSynchronizeModel
+            {
+                Action = EnumAction.Renamed,
+                LocalPath = e.FullPath,
+                OldLocalPath = e.OldFullPath,
+                DeviceIdentifier = deviceIdentifier,
+            });
 
-    public void OnError(ErrorEventArgs e, IWatcher watcher)
-        => logger.LogError(e.GetException(), "OnError");
-
-    public void OnRenamed(RenamedEventArgs e, IWatcher watcher)
-        => Task.Run(async () =>
-        {
-            var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
-                .Select(deviceIdentifier => new PendingSynchronizeModel
-                {
-                    Action = EnumAction.Renamed,
-                    LocalPath = e.FullPath,
-                    OldLocalPath = e.OldFullPath,
-                    DeviceIdentifier = deviceIdentifier,
-                });
-
-            await dataContext.PendingSynchronizer.AddRangeAsync(pendingSynchronizeItems);
-            await dataContext.SaveChangesAsync();
-        });
+        await dataContext.PendingSynchronizer.AddRangeAsync(pendingSynchronizeItems);
+        await dataContext.SaveChangesAsync();
+    }
 }
