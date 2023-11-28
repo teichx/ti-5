@@ -8,7 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Protobuf Include="..\TI5yncronizer.Core\Protos\auth.proto" GrpcServices="Server" />
     <Protobuf Include="..\TI5yncronizer.Core\Protos\file_listener.proto" GrpcServices="Server" />
   </ItemGroup>
 
