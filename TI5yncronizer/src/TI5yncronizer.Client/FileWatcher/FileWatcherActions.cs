@@ -4,33 +4,70 @@ namespace TI5yncronizer.Client.FileWatcher;
 
 public class FileWatcherActions(ILogger<FileWatcherActions> logger) : IFileWatcherActions
 {
-    public Task OnChanged(FileSystemEventArgs e, IWatcher watcher)
+    internal Task HandleCopy(string fullPath, IWatcher watcher, bool deleteOld = false)
     {
-        logger.LogInformation("OnChanged {FullPath}", e.FullPath);
+        var origin = fullPath.TrimStart('\\');
+
+        var fileName = Path.GetFileName(origin);
+        var finalDestiny = Path.Combine(watcher.ServerPath, fileName);
+
+        logger.LogDebug("Copy \nFrom '{}' \nTo '{}'", origin, finalDestiny);
+
+        if (File.Exists(finalDestiny) is false)
+        {
+            File.Copy(origin, finalDestiny);
+            return Task.CompletedTask;
+        }
+        if (deleteOld is false) throw new IOException($"The file '{finalDestiny}' already exists");
+
+        var tempFileName = Guid.NewGuid().ToString() + ".tmp";
+        var tempDestiny = Path.Combine(watcher.ServerPath, tempFileName);
+
+        var secondaryTempFileName = Guid.NewGuid().ToString() + ".tmp";
+        var secondaryTempDestiny = Path.Combine(watcher.ServerPath, secondaryTempFileName);
+
+        File.Copy(origin, tempDestiny);
+
+        File.Move(finalDestiny, secondaryTempDestiny);
+        File.Move(tempDestiny, finalDestiny);
+
+        File.Delete(tempDestiny);
+        File.Delete(secondaryTempDestiny);
+
         return Task.CompletedTask;
     }
 
+    public Task OnChanged(FileSystemEventArgs e, IWatcher watcher)
+        => HandleCopy(e.FullPath, watcher, deleteOld: true);
+
     public Task OnCreated(FileSystemEventArgs e, IWatcher watcher)
-    {
-        logger.LogInformation("OnCreated {FullPath}", e.FullPath);
-        return Task.CompletedTask;
-    }
+        => HandleCopy(e.FullPath, watcher);
 
     public Task OnDeleted(FileSystemEventArgs e, IWatcher watcher)
     {
-        logger.LogInformation("OnDeleted {FullPath}", e.FullPath);
+        var fileName = Path.GetFileName(e.FullPath);
+        var destiny = Path.Combine(watcher.ServerPath, fileName);
+        logger.LogDebug("OnDeleted local {} to delete server {}", e.FullPath, destiny);
+        File.Delete(destiny);
+
         return Task.CompletedTask;
     }
 
     public Task OnError(ErrorEventArgs e, IWatcher watcher)
     {
-        logger.LogInformation("OnError {Error}", e);
+        logger.LogError(e.GetException(), "Error on file watcher");
         return Task.CompletedTask;
     }
 
     public Task OnRenamed(RenamedEventArgs e, IWatcher watcher)
     {
-        logger.LogInformation("OnRenamed {FullPath}", e.FullPath);
+        var oldFileName = Path.GetFileName(e.OldFullPath);
+        var fileName = Path.GetFileName(e.FullPath);
+        var origin = Path.Combine(watcher.ServerPath, oldFileName);
+        var destiny = Path.Combine(watcher.ServerPath, fileName);
+        logger.LogDebug("OnRenamed {} to change to {}", origin, destiny);
+        File.Move(origin, destiny);
+
         return Task.CompletedTask;
     }
 }
