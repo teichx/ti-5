@@ -64,6 +64,7 @@ public class ListenerHostedService(
         }
         catch (Exception e)
         {
+            _inRequest = false;
             logger.LogError(e, "Failed on get listeners data");
         }
     }

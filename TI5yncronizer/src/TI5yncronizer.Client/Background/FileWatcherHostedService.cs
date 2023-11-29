@@ -51,6 +51,7 @@ public class FileWatcherHostedService(
         }
         catch (Exception e)
         {
+            _inRequest = false;
             logger.LogError(e, "Failed on get files to synchronize");
         }
     }
