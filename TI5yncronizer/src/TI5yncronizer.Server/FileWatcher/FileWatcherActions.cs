@@ -16,12 +16,10 @@ public class FileWatcherActions(
 
     async ValueTask<List<string>> ListDeviceIdentifierListAsync(string fullPath)
     {
-        var directory = Path.GetDirectoryName(fullPath)
-            ?.Replace('\\', '/')
-            ?? string.Empty;
+        var directory = Watcher.PathNormalizer(Path.GetDirectoryName(fullPath) ?? string.Empty);
 
         return await dataContext.Listener
-            .Where(x => directory.Contains(x.ServerPath))
+            .Where(x => directory.Contains(x.ServerPath) || directory.Contains(x.LocalPath))
             .Where(x => x.DeletedAt == null)
             .Select(x => x.DeviceIdentifier)
             .Distinct()

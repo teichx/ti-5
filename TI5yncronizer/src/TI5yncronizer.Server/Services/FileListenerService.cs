@@ -84,7 +84,7 @@ public class FileListenerService(
         };
     }
 
-    IQueryable<ListenerModel> FilterByCreatedAfter(IQueryable<ListenerModel> query, string? updatedAfter)
+    IQueryable<ListenerModel> FilterByUpdatedAfter(IQueryable<ListenerModel> query, string? updatedAfter)
     {
         if (string.IsNullOrWhiteSpace(updatedAfter)) return query;
 
@@ -97,7 +97,7 @@ public class FileListenerService(
         var query = dataContext.Listener
             .Where(x => x.DeviceIdentifier == request.DeviceIdentifier);
 
-        var filteredByDate = FilterByCreatedAfter(query, request.UpdatedAfter);
+        var filteredByDate = FilterByUpdatedAfter(query, request.UpdatedAfter);
 
         var listenerList = await filteredByDate
             .Select(x => new

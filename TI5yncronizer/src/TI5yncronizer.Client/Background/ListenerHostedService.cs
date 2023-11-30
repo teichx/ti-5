@@ -60,12 +60,14 @@ public class ListenerHostedService(
             }
 
             _lastQuery = queryInit;
-            _inRequest = false;
         }
         catch (Exception e)
         {
-            _inRequest = false;
             logger.LogError(e, "Failed on get listeners data");
+        }
+        finally
+        {
+            _inRequest = false;
         }
     }
 

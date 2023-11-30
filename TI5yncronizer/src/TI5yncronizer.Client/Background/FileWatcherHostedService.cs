@@ -47,12 +47,14 @@ public class FileWatcherHostedService(
                     DeviceIdentifier = Device.DefaultDevice.Value,
                 });
             }
-            _inRequest = false;
         }
         catch (Exception e)
         {
-            _inRequest = false;
             logger.LogError(e, "Failed on get files to synchronize");
+        }
+        finally
+        {
+            _inRequest = false;
         }
     }
 

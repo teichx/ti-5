@@ -22,7 +22,7 @@ public readonly struct Watcher : IWatcher
     public override int GetHashCode()
         => HashCode.Combine(LocalPath, ServerPath, DeviceIdentifier);
 
-    static string PathNormalizer(string path)
+    public static string PathNormalizer(string path)
         => path
             .Replace('/', '\\')
             .TrimStart('\\')
