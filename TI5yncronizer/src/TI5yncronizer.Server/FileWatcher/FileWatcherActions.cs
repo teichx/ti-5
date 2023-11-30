@@ -39,9 +39,18 @@ public class FileWatcherActions(
         }
     }
 
+    bool ShouldIgnore(string fullPath)
+    {
+        if (string.IsNullOrWhiteSpace(fullPath)) return true;
+        if (".tmp".Equals(Path.GetExtension(fullPath))) return true;
+
+        return false;
+    }
+
     public async Task OnChanged(FileSystemEventArgs e, IWatcher watcher)
         => await PreventDuplicationEvent(async () =>
         {
+            if (ShouldIgnore(e.FullPath)) return;
             var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
             .Select(deviceIdentifier => new PendingSynchronizeModel
             {
@@ -58,6 +67,7 @@ public class FileWatcherActions(
     public async Task OnCreated(FileSystemEventArgs e, IWatcher watcher)
         => await PreventDuplicationEvent(async () =>
         {
+            if (ShouldIgnore(e.FullPath)) return;
             var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
                 .Select(deviceIdentifier => new PendingSynchronizeModel
                 {
@@ -74,6 +84,7 @@ public class FileWatcherActions(
     public async Task OnDeleted(FileSystemEventArgs e, IWatcher watcher)
         => await PreventDuplicationEvent(async () =>
         {
+            if (ShouldIgnore(e.FullPath)) return;
             var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
                 .Select(deviceIdentifier => new PendingSynchronizeModel
                 {
@@ -96,6 +107,7 @@ public class FileWatcherActions(
     public async Task OnRenamed(RenamedEventArgs e, IWatcher watcher)
         => await PreventDuplicationEvent(async () =>
         {
+            if (ShouldIgnore(e.FullPath)) return;
             var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
                 .Select(deviceIdentifier => new PendingSynchronizeModel
                 {

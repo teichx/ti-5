@@ -1,3 +1,4 @@
+using TI5yncronizer.Core.Extensions;
 using TI5yncronizer.Core.FileWatcher;
 
 namespace TI5yncronizer.Client.FileWatcher;
@@ -20,6 +21,7 @@ public class FileWatcherActions(ILogger<FileWatcherActions> logger) : IFileWatch
         }
         if (deleteOld is false) throw new IOException($"The file '{finalDestiny}' already exists");
 
+        if (FileExtension.IsSameFiles(origin, finalDestiny)) return Task.CompletedTask;
         var tempFileName = Guid.NewGuid().ToString() + ".tmp";
         var tempDestiny = Path.Combine(watcher.ServerPath, tempFileName);
 
@@ -48,6 +50,11 @@ public class FileWatcherActions(ILogger<FileWatcherActions> logger) : IFileWatch
         var fileName = Path.GetFileName(e.FullPath);
         var destiny = Path.Combine(watcher.ServerPath, fileName);
         logger.LogDebug("OnDeleted local {} to delete server {}", e.FullPath, destiny);
+        if (File.Exists(destiny) is false)
+        {
+            logger.LogWarning("Deleted file with destiny '{}' not exists", destiny);
+            return Task.CompletedTask;
+        }
         File.Delete(destiny);
 
         return Task.CompletedTask;
@@ -66,6 +73,16 @@ public class FileWatcherActions(ILogger<FileWatcherActions> logger) : IFileWatch
         var origin = Path.Combine(watcher.ServerPath, oldFileName);
         var destiny = Path.Combine(watcher.ServerPath, fileName);
         logger.LogDebug("OnRenamed {} to change to {}", origin, destiny);
+        if (File.Exists(origin) is false)
+        {
+            logger.LogWarning("Renamed file origin '{}' not exists", origin);
+            return Task.CompletedTask;
+        }
+        if (File.Exists(destiny))
+        {
+            logger.LogWarning("Renamed file destiny '{}' already exists", destiny);
+            return Task.CompletedTask;
+        }
         File.Move(origin, destiny);
 
         return Task.CompletedTask;

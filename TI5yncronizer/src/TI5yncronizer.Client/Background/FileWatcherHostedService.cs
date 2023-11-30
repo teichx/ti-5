@@ -7,7 +7,8 @@ namespace TI5yncronizer.Client.Background;
 
 public class FileWatcherHostedService(
     ILogger<FileWatcherHostedService> logger,
-    IConfiguration configuration
+    IConfiguration configuration,
+    IFileWatcherActions fileWatcherActions
 ) : IHostedService, IDisposable
 {
     bool _inRequest;
@@ -76,17 +77,36 @@ public class FileWatcherHostedService(
     {
         try
         {
-            var action = ((EnumAction)file.EnumAction).ToString();
-            var lastWriteUtc = new DateTime(file.LastWriteUtcAsTicks);
-            logger.LogInformation("Try {Action} from {Server} to {Local} with id {Id} lastWrite {}", action, file.ServerPath, file.LocalPath, file.Id, lastWriteUtc.Ticks);
-            var watcher = new Watcher
+            logger.LogInformation("Process file \nLocal '{}'\nServer {}", file.LocalPath, file.ServerPath);
+            var action = (EnumAction)file.EnumAction;
+            var watcher = new Watcher()
             {
                 LocalPath = file.LocalPath,
                 ServerPath = file.ServerPath,
                 DeviceIdentifier = Device.DefaultDevice.Value,
             };
-            var directory = Path.GetDirectoryName(file.LocalPath)!;
-            var name = Path.GetFileName(file.LocalPath);
+            var changeFunction = action switch
+            {
+                EnumAction.Changed => fileWatcherActions.OnChanged(
+                    new FileSystemEventArgs(WatcherChangeTypes.Changed, string.Empty, file.LocalPath),
+                    watcher
+                ),
+                EnumAction.Created => fileWatcherActions.OnCreated(
+                    new FileSystemEventArgs(WatcherChangeTypes.Created, string.Empty, file.LocalPath),
+                    watcher
+                ),
+                EnumAction.Renamed => fileWatcherActions.OnRenamed(
+                    new RenamedEventArgs(WatcherChangeTypes.Renamed, string.Empty, file.LocalPath, file.OldServerPath),
+                    watcher
+                ),
+                EnumAction.Deleted => fileWatcherActions.OnDeleted(
+                    new FileSystemEventArgs(WatcherChangeTypes.Deleted, string.Empty, file.LocalPath),
+                    watcher
+                ),
+                _ => throw new NotImplementedException(),
+            };
+            changeFunction.GetAwaiter().GetResult();
+
             return true;
         }
         catch (Exception e)

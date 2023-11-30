@@ -17,7 +17,7 @@ public class FileWatcher(
 
     public async ValueTask NotifyChangeRecursive(IWatcher watcher)
     {
-        var path = PathFromIWatcher(watcher);
+        var path = Watcher.PathNormalizer(PathFromIWatcher(watcher));
         foreach (var filePath in Directory.EnumerateFiles(path, "*.*", SearchOption.AllDirectories))
         {
             var eventChange = new FileSystemEventArgs(
@@ -57,7 +57,7 @@ public class FileWatcher(
 
     public EnumFileWatcher AddWatcher(IWatcher watcher)
     {
-        logger.LogInformation("Try add watcher for LocalPath={LocalPath} ServerPath={ServerPath} DeviceIdentifier={DeviceIdentifier}", watcher.LocalPath, watcher.ServerPath, watcher.DeviceIdentifier);
+        logger.LogInformation("Try add watcher for LocalPath='{LocalPath}' ServerPath='{ServerPath}' DeviceIdentifier={DeviceIdentifier}", watcher.LocalPath, watcher.ServerPath, watcher.DeviceIdentifier);
         if (watchers.TryAdd(watcher, CreateWatcher(watcher)))
             return EnumFileWatcher.TryCreateSuccess;
 

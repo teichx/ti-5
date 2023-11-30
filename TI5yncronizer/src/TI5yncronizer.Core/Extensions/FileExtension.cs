@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using TI5yncronizer.Core.FileWatcher;
 
 namespace TI5yncronizer.Core.Extensions;
 
@@ -22,7 +23,7 @@ public static class FileExtension
     {
         try
         {
-            return ComputeFileHash(leftFile) == ComputeFileHash(rightFile);
+            return ComputeFileHash(Watcher.PathNormalizer(leftFile)) == ComputeFileHash(Watcher.PathNormalizer(rightFile));
         }
         catch
         {

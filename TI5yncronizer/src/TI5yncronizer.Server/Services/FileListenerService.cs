@@ -127,7 +127,6 @@ public class FileListenerService(
             {
                 x.Id,
                 x.LocalPath,
-                x.OldLocalPath,
                 x.Action,
                 x.LastWriteUtcAsTicks,
             })
@@ -138,7 +137,7 @@ public class FileListenerService(
         result.Files.AddRange(fileList?.Select(x => new ListPendingFilesToSyncObject
         {
             Id = x.Id,
-            LocalPath = x.LocalPath,
+            LocalPath = Watcher.PathNormalizer(x.LocalPath),
             EnumAction = (int)x.Action,
             LastWriteUtcAsTicks = x.LastWriteUtcAsTicks,
         }));
