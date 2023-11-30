@@ -5,14 +5,19 @@ namespace TI5yncronizer.Client.FileWatcher;
 
 public class FileWatcherActions(ILogger<FileWatcherActions> logger) : IFileWatcherActions
 {
+    object __locker = new();
+    protected virtual bool OriginIsLocal { get; } = true;
+
     internal Task HandleCopy(string fullPath, IWatcher watcher, bool deleteOld = false)
     {
+        if (FileExtension.ShouldIgnoreSync(fullPath)) return Task.CompletedTask;
         var origin = fullPath.TrimStart('\\');
 
         var fileName = Path.GetFileName(origin);
-        var finalDestiny = Path.Combine(watcher.ServerPath, fileName);
+        var basePath = OriginIsLocal ? watcher.ServerPath : watcher.LocalPath;
+        var finalDestiny = Path.Combine(basePath, fileName);
 
-        logger.LogDebug("Copy \nFrom '{}' \nTo '{}'", origin, finalDestiny);
+        logger.LogDebug("Copy \nFrom '{}' \nTo '{}' when delete old is {}", origin, finalDestiny, deleteOld);
 
         if (File.Exists(finalDestiny) is false)
         {
@@ -23,10 +28,10 @@ public class FileWatcherActions(ILogger<FileWatcherActions> logger) : IFileWatch
 
         if (FileExtension.IsSameFiles(origin, finalDestiny)) return Task.CompletedTask;
         var tempFileName = Guid.NewGuid().ToString() + ".tmp";
-        var tempDestiny = Path.Combine(watcher.ServerPath, tempFileName);
+        var tempDestiny = Path.Combine(basePath, tempFileName);
 
         var secondaryTempFileName = Guid.NewGuid().ToString() + ".tmp";
-        var secondaryTempDestiny = Path.Combine(watcher.ServerPath, secondaryTempFileName);
+        var secondaryTempDestiny = Path.Combine(basePath, secondaryTempFileName);
 
         File.Copy(origin, tempDestiny);
 
@@ -40,24 +45,40 @@ public class FileWatcherActions(ILogger<FileWatcherActions> logger) : IFileWatch
     }
 
     public Task OnChanged(FileSystemEventArgs e, IWatcher watcher)
-        => HandleCopy(e.FullPath, watcher, deleteOld: true);
+    {
+        lock (__locker)
+        {
+            return HandleCopy(e.FullPath, watcher, deleteOld: true);
+        }
+    }
 
     public Task OnCreated(FileSystemEventArgs e, IWatcher watcher)
-        => HandleCopy(e.FullPath, watcher);
+    {
+        lock (__locker)
+        {
+            return HandleCopy(e.FullPath, watcher);
+        }
+    }
 
     public Task OnDeleted(FileSystemEventArgs e, IWatcher watcher)
     {
-        var fileName = Path.GetFileName(e.FullPath);
-        var destiny = Path.Combine(watcher.ServerPath, fileName);
-        logger.LogDebug("OnDeleted local {} to delete server {}", e.FullPath, destiny);
-        if (File.Exists(destiny) is false)
+        if (FileExtension.ShouldIgnoreSync(e.FullPath)) return Task.CompletedTask;
+
+        lock (__locker)
         {
-            logger.LogWarning("Deleted file with destiny '{}' not exists", destiny);
+            var fileName = Path.GetFileName(e.FullPath);
+            var basePath = OriginIsLocal ? watcher.ServerPath : watcher.LocalPath;
+            var destiny = Path.Combine(basePath, fileName);
+            logger.LogDebug("OnDeleted local {} to delete server {}", e.FullPath, destiny);
+            if (File.Exists(destiny) is false)
+            {
+                logger.LogWarning("Deleted file with destiny '{}' not exists", destiny);
+                return Task.CompletedTask;
+            }
+            File.Delete(destiny);
+
             return Task.CompletedTask;
         }
-        File.Delete(destiny);
-
-        return Task.CompletedTask;
     }
 
     public Task OnError(ErrorEventArgs e, IWatcher watcher)
@@ -68,23 +89,29 @@ public class FileWatcherActions(ILogger<FileWatcherActions> logger) : IFileWatch
 
     public Task OnRenamed(RenamedEventArgs e, IWatcher watcher)
     {
-        var oldFileName = Path.GetFileName(e.OldFullPath);
-        var fileName = Path.GetFileName(e.FullPath);
-        var origin = Path.Combine(watcher.ServerPath, oldFileName);
-        var destiny = Path.Combine(watcher.ServerPath, fileName);
-        logger.LogDebug("OnRenamed {} to change to {}", origin, destiny);
-        if (File.Exists(origin) is false)
+        if (FileExtension.ShouldIgnoreSync(e.FullPath)) return Task.CompletedTask;
+        lock (__locker)
         {
-            logger.LogWarning("Renamed file origin '{}' not exists", origin);
-            return Task.CompletedTask;
-        }
-        if (File.Exists(destiny))
-        {
-            logger.LogWarning("Renamed file destiny '{}' already exists", destiny);
-            return Task.CompletedTask;
-        }
-        File.Move(origin, destiny);
+            var oldFileName = Path.GetFileName(e.OldFullPath);
+            var fileName = Path.GetFileName(e.FullPath);
 
-        return Task.CompletedTask;
+            var basePath = OriginIsLocal ? watcher.ServerPath : watcher.LocalPath;
+            var origin = Path.Combine(basePath, oldFileName);
+            var destiny = Path.Combine(basePath, fileName);
+            logger.LogDebug("OnRenamed {} to change to {}", origin, destiny);
+            if (File.Exists(origin) is false)
+            {
+                logger.LogWarning("Renamed file origin '{}' not exists", origin);
+                return Task.CompletedTask;
+            }
+            if (File.Exists(destiny))
+            {
+                logger.LogWarning("Renamed file destiny '{}' already exists", destiny);
+                return Task.CompletedTask;
+            }
+            File.Move(origin, destiny);
+
+            return Task.CompletedTask;
+        }
     }
 }

@@ -39,23 +39,16 @@ public class FileWatcherActions(
         }
     }
 
-    bool ShouldIgnore(string fullPath)
-    {
-        if (string.IsNullOrWhiteSpace(fullPath)) return true;
-        if (".tmp".Equals(Path.GetExtension(fullPath))) return true;
-
-        return false;
-    }
-
     public async Task OnChanged(FileSystemEventArgs e, IWatcher watcher)
         => await PreventDuplicationEvent(async () =>
         {
-            if (ShouldIgnore(e.FullPath)) return;
+            if (FileExtension.ShouldIgnoreSync(e.FullPath)) return;
             var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
             .Select(deviceIdentifier => new PendingSynchronizeModel
             {
                 Action = EnumAction.Changed,
-                LocalPath = e.FullPath,
+                LocalPath = watcher.LocalPath,
+                ServerPath = e.FullPath,
                 DeviceIdentifier = deviceIdentifier,
                 LastWriteUtcAsTicks = e.FullPath.GetLastWriteTicks(),
             });
@@ -67,12 +60,13 @@ public class FileWatcherActions(
     public async Task OnCreated(FileSystemEventArgs e, IWatcher watcher)
         => await PreventDuplicationEvent(async () =>
         {
-            if (ShouldIgnore(e.FullPath)) return;
+            if (FileExtension.ShouldIgnoreSync(e.FullPath)) return;
             var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
                 .Select(deviceIdentifier => new PendingSynchronizeModel
                 {
                     Action = EnumAction.Created,
-                    LocalPath = e.FullPath,
+                    LocalPath = watcher.LocalPath,
+                    ServerPath = e.FullPath,
                     DeviceIdentifier = deviceIdentifier,
                     LastWriteUtcAsTicks = e.FullPath.GetLastWriteTicks(),
                 });
@@ -84,12 +78,13 @@ public class FileWatcherActions(
     public async Task OnDeleted(FileSystemEventArgs e, IWatcher watcher)
         => await PreventDuplicationEvent(async () =>
         {
-            if (ShouldIgnore(e.FullPath)) return;
+            if (FileExtension.ShouldIgnoreSync(e.FullPath)) return;
             var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
                 .Select(deviceIdentifier => new PendingSynchronizeModel
                 {
                     Action = EnumAction.Deleted,
-                    LocalPath = e.FullPath,
+                    LocalPath = watcher.LocalPath,
+                    ServerPath = e.FullPath,
                     DeviceIdentifier = deviceIdentifier,
                     LastWriteUtcAsTicks = e.FullPath.GetLastWriteTicks(),
                 });
@@ -107,13 +102,14 @@ public class FileWatcherActions(
     public async Task OnRenamed(RenamedEventArgs e, IWatcher watcher)
         => await PreventDuplicationEvent(async () =>
         {
-            if (ShouldIgnore(e.FullPath)) return;
+            if (FileExtension.ShouldIgnoreSync(e.FullPath)) return;
             var pendingSynchronizeItems = (await ListDeviceIdentifierListAsync(e.FullPath))
                 .Select(deviceIdentifier => new PendingSynchronizeModel
                 {
                     Action = EnumAction.Renamed,
-                    LocalPath = e.FullPath,
-                    OldLocalPath = e.OldFullPath,
+                    LocalPath = watcher.LocalPath,
+                    ServerPath = e.FullPath,
+                    OldServerPath = e.OldFullPath,
                     DeviceIdentifier = deviceIdentifier,
                     LastWriteUtcAsTicks = e.FullPath.GetLastWriteTicks(),
                 });

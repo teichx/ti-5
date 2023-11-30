@@ -12,8 +12,11 @@ public class PendingSynchronizeModel
     [Required, StringLength(512)]
     public required string LocalPath { get; set; }
 
+    [Required, StringLength(512)]
+    public required string ServerPath { get; set; }
+
     [StringLength(512)]
-    public string? OldLocalPath { get; set; }
+    public string? OldServerPath { get; set; }
 
     [Required]
     public required EnumAction Action { get; set; }

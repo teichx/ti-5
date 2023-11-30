@@ -54,7 +54,6 @@ message ListPendingFilesToSyncObject {
     string server_path = 3;
     string old_server_path = 4;
     int32 enum_action = 5;
-    int64 last_write_utc_as_ticks = 6;
 }
 message ListPendingFilesToSyncReply {
     repeated ListPendingFilesToSyncObject files = 1;

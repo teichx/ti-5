@@ -127,6 +127,8 @@ public class FileListenerService(
             {
                 x.Id,
                 x.LocalPath,
+                x.ServerPath,
+                x.OldServerPath,
                 x.Action,
                 x.LastWriteUtcAsTicks,
             })
@@ -138,8 +140,9 @@ public class FileListenerService(
         {
             Id = x.Id,
             LocalPath = Watcher.PathNormalizer(x.LocalPath),
+            ServerPath = Watcher.PathNormalizer(x.ServerPath),
+            OldServerPath = Watcher.PathNormalizer(x.OldServerPath ?? string.Empty),
             EnumAction = (int)x.Action,
-            LastWriteUtcAsTicks = x.LastWriteUtcAsTicks,
         }));
 
         return result;

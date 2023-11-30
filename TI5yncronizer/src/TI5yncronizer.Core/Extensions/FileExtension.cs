@@ -30,4 +30,13 @@ public static class FileExtension
             return false;
         }
     }
+
+    public static bool ShouldIgnoreSync(string fullPath)
+    {
+        if (string.IsNullOrWhiteSpace(fullPath)) return true;
+        if (".tmp".Equals(Path.GetExtension(fullPath))) return true;
+
+        return false;
+    }
+
 }

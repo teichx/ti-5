@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Grpc.Net.Client;
+using TI5yncronizer.Client.FileWatcher;
 using TI5yncronizer.Core;
 using TI5yncronizer.Core.FileWatcher;
 using TI5yncronizer.Core.ValueObject;
@@ -8,7 +10,7 @@ namespace TI5yncronizer.Client.Background;
 public class FileWatcherHostedService(
     ILogger<FileWatcherHostedService> logger,
     IConfiguration configuration,
-    IFileWatcherActions fileWatcherActions
+    IFromServerFileWatcherActions fromServerFileWatcherActions
 ) : IHostedService, IDisposable
 {
     bool _inRequest;
@@ -52,6 +54,7 @@ public class FileWatcherHostedService(
         catch (Exception e)
         {
             logger.LogError(e, "Failed on get files to synchronize");
+            Thread.Sleep(TimeSpan.FromSeconds(1));
         }
         finally
         {
@@ -77,6 +80,9 @@ public class FileWatcherHostedService(
     {
         try
         {
+            logger.LogInformation(JsonSerializer.Serialize(file));
+            if (string.IsNullOrWhiteSpace(file.LocalPath)) return true;
+            if (string.IsNullOrWhiteSpace(file.ServerPath)) return true;
             logger.LogInformation("Process file \nLocal '{}'\nServer {}", file.LocalPath, file.ServerPath);
             var action = (EnumAction)file.EnumAction;
             var watcher = new Watcher()
@@ -87,20 +93,20 @@ public class FileWatcherHostedService(
             };
             var changeFunction = action switch
             {
-                EnumAction.Changed => fileWatcherActions.OnChanged(
-                    new FileSystemEventArgs(WatcherChangeTypes.Changed, string.Empty, file.LocalPath),
+                EnumAction.Changed => fromServerFileWatcherActions.OnChanged(
+                    new FileSystemEventArgs(WatcherChangeTypes.Changed, string.Empty, file.ServerPath),
                     watcher
                 ),
-                EnumAction.Created => fileWatcherActions.OnCreated(
-                    new FileSystemEventArgs(WatcherChangeTypes.Created, string.Empty, file.LocalPath),
+                EnumAction.Created => fromServerFileWatcherActions.OnCreated(
+                    new FileSystemEventArgs(WatcherChangeTypes.Created, string.Empty, file.ServerPath),
                     watcher
                 ),
-                EnumAction.Renamed => fileWatcherActions.OnRenamed(
-                    new RenamedEventArgs(WatcherChangeTypes.Renamed, string.Empty, file.LocalPath, file.OldServerPath),
+                EnumAction.Renamed => fromServerFileWatcherActions.OnRenamed(
+                    new RenamedEventArgs(WatcherChangeTypes.Renamed, string.Empty, file.ServerPath, file.OldServerPath),
                     watcher
                 ),
-                EnumAction.Deleted => fileWatcherActions.OnDeleted(
-                    new FileSystemEventArgs(WatcherChangeTypes.Deleted, string.Empty, file.LocalPath),
+                EnumAction.Deleted => fromServerFileWatcherActions.OnDeleted(
+                    new FileSystemEventArgs(WatcherChangeTypes.Deleted, string.Empty, file.ServerPath),
                     watcher
                 ),
                 _ => throw new NotImplementedException(),
