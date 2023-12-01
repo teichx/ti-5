@@ -24,7 +24,7 @@ public class FileWatcherActions(ILogger<FileWatcherActions> logger) : IFileWatch
             File.Copy(origin, finalDestiny);
             return Task.CompletedTask;
         }
-        if (deleteOld is false) throw new IOException($"The file '{finalDestiny}' already exists");
+        if (deleteOld is false) return Task.CompletedTask;
 
         if (FileExtension.IsSameFiles(origin, finalDestiny)) return Task.CompletedTask;
         var tempFileName = Guid.NewGuid().ToString() + ".tmp";
